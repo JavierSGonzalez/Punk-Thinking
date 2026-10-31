@@ -1,0 +1,14 @@
+# Versiones probadas con Python 3.13 (funciona con Python 3.10 o superior; se recomienda 3.12)
+fastapi>=0.143,<1
+uvicorn>=0.54,<1
+httpx>=0.28,<1
+python-dotenv>=1.0,<2
+numpy>=1.26,<3
+fastembed>=0.9,<1
+pypdf>=6.0,<7
+python-docx>=1.1,<2
+anthropic>=1.13,<2   # solo se usa si LLM_PROVIDER=anthropic
+ddgs>=9,<10          # solo se usa si WEB_BACKEND=duckduckgo (plan B sin Docker)
+pillow>=10.3         # para reducir y revisar las fotos adjuntas (fastembed ya lo instala)
+tzdata                  # zonas horarias de Windows (la hora de otras ciudades); sin él PK usa UTC-6 para El Salvador
+faster-whisper>=1.1,<2  # el "oído" local del modo asistente (voz → texto); descarga un modelo de ~150 MB la primera vez

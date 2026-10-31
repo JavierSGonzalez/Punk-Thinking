@@ -1,0 +1,17 @@
+# Secretos y datos PERSONALES: nunca se suben a GitHub
+.env
+data/
+espacio/
+knowledge/*
+!knowledge/bienvenida.md
+searxng/config/settings.yml
+searxng/data/
+
+# Entorno de Python y basura
+.venv/
+__pycache__/
+*.pyc
+*.log
+
+# Notas de entrega (solo sirven en tu PC)
+LEEME-ENTREGA*.txt

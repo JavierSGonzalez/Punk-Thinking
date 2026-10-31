@@ -1,0 +1,10 @@
+# Protege tu privacidad si algún día usas Git o GitHub:
+# tu clave, tus documentos y el índice generado NUNCA se suben.
+.env
+knowledge/*
+data/
+
+# Archivos de Python
+.venv/
+__pycache__/
+*.pyc

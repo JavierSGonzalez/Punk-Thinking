@@ -1,0 +1,14 @@
+# Configuración de SearXNG para PK (buscador web privado que corre en TU computador).
+# Se usa con el comando de Docker de README.md. Cambia secret_key por una clave propia
+# (instrucciones en el README) antes de encender el contenedor.
+use_default_settings: true
+
+server:
+  secret_key: "CAMBIA-ESTO-POR-TU-CLAVE"
+  limiter: false          # solo tú lo usas, desde tu propio computador
+  image_proxy: false
+
+search:
+  formats:
+    - html
+    - json                # PK lee los resultados en formato JSON

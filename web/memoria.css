@@ -1,0 +1,35 @@
+/* Pestaña Memoria */
+body[data-view="memoria"] main, body[data-view="memoria"] footer { display: none; }
+#memoria { flex: 1; min-height: 0; display: none; flex-direction: column; overflow-y: auto; }
+body[data-view="memoria"] #memoria { display: flex; }
+
+.m-wrap { width: 100%; max-width: 780px; margin: 0 auto; padding: 18px 16px 40px; display: flex; flex-direction: column; gap: 18px; }
+.m-intro { margin: 0; padding: 10px 12px; font: .8rem/1.5 var(--mono); color: var(--muted); border: 1px solid var(--line);
+           border-radius: 8px; background: var(--panel); }
+.m-intro.warn { color: var(--text); border-color: var(--danger); }
+.m-box { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 12px 14px; }
+.m-box h2 { margin: 0 0 4px; font: 700 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.m-box p.m-sub { margin: 0 0 10px; font: .78rem var(--mono); color: var(--muted); }
+.m-toggles { display: flex; flex-direction: column; gap: 8px; }
+.m-toggles label { display: flex; gap: 8px; align-items: flex-start; font-size: .92rem; cursor: pointer; }
+.m-toggles input { margin-top: 4px; accent-color: var(--accent); }
+.m-toggles small { display: block; color: var(--muted); font: .75rem var(--mono); }
+.m-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.m-list li { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.m-list .m-text { flex: 1; min-width: 0; word-break: break-word; }
+.m-list .m-meta { display: block; margin-top: 2px; font: .72rem var(--mono); color: var(--muted); }
+.m-list .m-none { color: var(--muted); font: .85rem var(--mono); border-style: dashed; }
+.m-list input.m-edit { flex: 1; min-width: 0; height: 36px; padding: 0 8px; font: inherit; color: var(--text); background: var(--panel);
+                       border: 1px solid var(--accent); border-radius: 6px; }
+.m-ico { flex: none; height: 30px; min-width: 30px; padding: 0 8px; font: .8rem var(--mono); color: var(--muted); background: none;
+         border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.m-ico:hover { color: var(--text); border-color: var(--accent); }
+.m-add { display: flex; gap: 8px; margin-top: 10px; }
+.m-add input { flex: 1; min-width: 0; height: 42px; padding: 0 10px; font: inherit; color: var(--text); background: var(--bg);
+               border: 1px solid var(--line); border-radius: 6px; }
+.m-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.m-danger { color: var(--danger); border-color: var(--danger); }
+.m-confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 2px solid var(--danger);
+             border-radius: 8px; background: var(--bg); font-size: .9rem; }
+.m-msg { min-height: 1.4em; font: .8rem var(--mono); color: var(--muted); }
+.m-msg.err { color: var(--danger); }

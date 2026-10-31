@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{NOMBRE}}</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0e0e0f">
+<link rel="stylesheet" href="/asistente.css">
+<link rel="stylesheet" href="/memoria.css">
+<script src="/perfil.js"></script>
+<style>
+  :root {
+    --bg: #0e0e0f; --panel: #17171a; --line: #2c2c31; --text: #f1efe8; --muted: #9b9aa0;
+    --accent: #e5ff3d; --accent-ink: #111; --danger: #ff7b7b; --side: #121214;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f4f1e8; --panel: #fffdf6; --line: #d8d2c1; --text: #151515; --muted: #6a665a;
+            --accent: #d4006e; --accent-ink: #fff; --danger: #b3261e; --side: #ebe7da; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--sans); }
+  .app { display: grid; grid-template-columns: 290px 1fr; height: 100%; }
+
+  /* Barra lateral */
+  aside { background: var(--side); border-right: 2px solid var(--text); display: flex; flex-direction: column;
+          min-height: 0; padding: 14px 12px; gap: 10px; }
+  h1 { margin: 0; font: 800 1.05rem var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .tag { font: .75rem var(--mono); color: var(--muted); }
+  .tag b { color: var(--accent-ink); background: var(--accent); padding: 1px 6px; font-weight: 700; }
+  .btn { height: 40px; padding: 0 14px; font: 700 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase;
+         color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 6px; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  input[type=search], .rename { width: 100%; height: 38px; padding: 0 10px; font: inherit; font-size: .9rem; color: var(--text);
+         background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  #chats { list-style: none; margin: 0; padding: 0; flex: 1; overflow-y: auto; min-height: 0; }
+  #chats li { display: flex; align-items: center; gap: 2px; border-radius: 6px; border-left: 3px solid transparent; }
+  #chats li.on { background: var(--panel); border-left-color: var(--accent); }
+  #chats li:hover { background: var(--panel); }
+  .open { flex: 1; min-width: 0; text-align: left; padding: 8px 8px; font: inherit; font-size: .9rem; color: var(--text);
+          background: none; border: 0; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon { width: 28px; height: 28px; flex: none; font-size: .95rem; color: var(--muted); background: none; border: 0;
+          border-radius: 4px; cursor: pointer; }
+  .icon:hover { color: var(--text); background: var(--line); }
+  .none { padding: 10px 8px; color: var(--muted); font-size: .85rem; }
+
+  /* Conversación */
+  .chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  header { padding: 12px 16px; border-bottom: 2px solid var(--text); display: flex; gap: 12px; align-items: center; }
+  #menu { display: none; height: 34px; width: 38px; font-size: 1.1rem; color: var(--text); background: var(--panel);
+          border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+  #title { flex: 1; min-width: 0; font: 700 .95rem var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  main { flex: 1; overflow-y: auto; padding: 16px; }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  .empty { color: var(--muted); text-align: center; margin-top: 12vh; }
+  .msg { margin: 0 0 20px; }
+  .me { display: flex; justify-content: flex-end; }
+  .mebox { max-width: 85%; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .me p { margin: 0; max-width: 100%; padding: 9px 13px; border: 1px solid var(--line); background: var(--panel);
+          border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .body { white-space: pre-wrap; overflow-wrap: anywhere; border-left: 3px solid var(--accent); padding-left: 12px; }
+  .body.warn { border-color: var(--muted); color: var(--muted); }
+  .body.err { border-color: var(--danger); color: var(--danger); }
+  .body[data-mode="charla"] { border-color: var(--muted); }
+  .badge { display: inline-block; margin: 0 0 6px 15px; padding: 1px 7px; font: 700 .68rem var(--mono); letter-spacing: .08em;
+           text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; }
+  .badge.hot { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  .notice { margin: 0 0 6px 15px; font: .78rem var(--mono); color: var(--muted); }
+  .link { display: block; margin-top: 6px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;
+          background: var(--panel); color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+  .link:hover { border-color: var(--accent); }
+  .link small { display: block; color: var(--muted); font: .74rem var(--mono); }
+  .link.flash, details.flash { border-color: var(--accent); }
+  .cite { font: 700 .72rem/1.5 var(--mono); margin: 0 2px; padding: 0 5px; color: var(--accent-ink);
+          background: var(--accent); border: 0; border-radius: 3px; cursor: pointer; vertical-align: super; }
+  .sources { margin: 12px 0 0 15px; }
+  details { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); margin-top: 6px; }
+  summary { cursor: pointer; padding: 6px 10px; font: .78rem var(--mono); color: var(--muted); }
+  details pre { margin: 0; padding: 8px 12px 12px; white-space: pre-wrap; overflow-wrap: anywhere; font: .82rem/1.5 var(--mono); }
+
+  /* Archivos adjuntos */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  #attached { max-width: 780px; margin: 0 auto 8px; }
+  #attached:empty { display: none; }
+  #attached .chips { justify-content: flex-start; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 8px; font: .78rem var(--mono);
+          color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  .chip img { width: 34px; height: 34px; object-fit: cover; border-radius: 4px; }
+  .chip .ext { padding: 0 5px; font-weight: 700; color: var(--accent-ink); background: var(--accent); border-radius: 3px; }
+  .chip .nm { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .st { color: var(--muted); overflow-wrap: anywhere; }
+  .chip.error { border-color: var(--danger); }
+  .chip.error .st { color: var(--danger); }
+  .chip .x { width: 22px; height: 22px; padding: 0; flex: none; color: var(--muted); background: none; border: 0;
+             border-radius: 4px; cursor: pointer; }
+  .chip .x:hover { color: var(--text); background: var(--line); }
+  /* Permiso antes de buscar en la web con palabras de tu archivo */
+  .confirm { margin: 12px 0 0 15px; padding: 10px 12px; border: 2px solid var(--accent); border-radius: 8px; background: var(--panel); }
+  .confirm input { width: 100%; height: 40px; margin: 6px 0 10px; padding: 0 10px; font: inherit; color: var(--text);
+                   background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+  .confirm .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .btn.small { height: 36px; padding: 0 12px; }
+  .btn.ghost { color: var(--text); background: none; border: 1px solid var(--line); }
+  .clip { width: 46px; height: 46px; flex: none; display: grid; place-items: center; color: var(--text); background: var(--panel);
+          border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+  .clip:hover { border-color: var(--accent); }
+  body.drag::after { content: "Suelta aquí tus archivos o fotos"; position: fixed; inset: 10px; display: grid; place-items: center;
+          font: 700 1rem var(--mono); color: var(--text); background: var(--bg); opacity: .94; border: 3px dashed var(--accent);
+          border-radius: 12px; z-index: 20; pointer-events: none; }
+
+  footer { border-top: 1px solid var(--line); padding: 12px 16px; }
+  form { max-width: 780px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
+  textarea { flex: 1; min-width: 0; resize: none; min-height: 46px; max-height: 160px; padding: 11px 12px; font: inherit;
+             color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  #send { height: 46px; padding: 0 18px; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dots::after { content: "..."; animation: dots 1.2s steps(4) infinite; }
+  @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+  @media (prefers-reduced-motion: reduce) { .dots::after { animation: none; } }
+
+  /* Celular: la barra lateral se abre con el botón ☰ */
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: fixed; inset: 0 auto 0 0; width: min(290px, 86vw); z-index: 5; transform: translateX(-100%);
+            transition: transform .2s; }
+    body.menu-open aside { transform: none; }
+    #menu { display: block; }
+    #send { padding: 0 12px; }
+  }
+</style>
+<style id="perfil-vars">/*PERFIL_CSS*/</style>
+</head>
+<body>
+<div class="app">
+  <aside id="side">
+    <h1 id="name">{{NOMBRE}}</h1>
+    <button class="btn" id="new" type="button">+ Nuevo chat</button>
+    <input id="find" type="search" placeholder="Buscar chat por nombre…" aria-label="Buscar chat por nombre">
+    <ul id="chats" aria-label="Tus chats"></ul>
+    <div class="tag" id="engine"></div>
+  </aside>
+
+  <section class="chat">
+    <header>
+      <button id="menu" type="button" aria-label="Abrir lista de chats">☰</button>
+      <span id="title">Chat nuevo</span>
+      <nav class="tabs" aria-label="Modo">
+        <button type="button" id="tab-chat" class="on" aria-pressed="true">Chat</button>
+        <button type="button" id="tab-voice" aria-pressed="false">Asistente</button>
+        <button type="button" id="tab-memoria" aria-pressed="false">Memoria</button>
+      </nav>
+      <span class="tag" id="counts"></span>
+    </header>
+    <main id="scroller">
+      <div class="wrap" id="log" role="log" aria-live="polite"></div>
+    </main>
+    <footer>
+      <div id="attached" aria-live="polite"></div>
+      <form id="form">
+        <button class="clip" id="clip" type="button" aria-label="Adjuntar fotos o archivos"
+                title="Adjuntar fotos o archivos (también puedes arrastrarlos o pegarlos)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+        <input id="file" type="file" multiple hidden
+               accept=".pdf,.docx,.txt,.md,.csv,.png,.jpg,.jpeg,.webp,.gif,.bmp,image/png,image/jpeg,image/webp,image/gif,image/bmp">
+        <textarea id="q" rows="1" aria-label="Tu pregunta" placeholder="Escribe tu pregunta o adjunta un archivo… (Enter envía)" autofocus></textarea>
+        <button class="btn" id="send" type="submit">Preguntar</button>
+      </form>
+    </footer>
+    <section id="voice" hidden aria-label="Modo asistente de voz"></section>
+    <section id="memoria" hidden aria-label="Memoria privada"></section>
+  </section>
+</div>
+
+<script>
+const $ = (selector) => document.querySelector(selector);
+const log = $("#log"), scroller = $("#scroller"), form = $("#form"), input = $("#q"), send = $("#send"), list = $("#chats");
+const EMPTY = "Charla conmigo o pregúntame algo.\nRespondo con tus documentos y cito la fuente; si no lo sé ahí, busco en la web y te lo aviso.\nCon el clip puedes adjuntar fotos y archivos (también arrastrándolos o pegándolos).";
+const DEFAULT_Q = "Analiza el archivo adjunto y dime de qué trata.";
+const FILE_OK = /\.(pdf|docx|txt|md|csv|png|jpe?g|webp|gif|bmp)$/i;
+const IS_IMAGE = /\.(png|jpe?g|webp|gif|bmp)$/i;
+let counter = 0, chats = [], currentId = null, editingId = null;
+let queue = [], busy = false, maxMb = 15, maxFiles = 4;   // queue = archivos que esperan ser enviados con el próximo mensaje
+
+// Siempre se escribe con textContent (nunca innerHTML): el texto de tus documentos no puede ejecutar código.
+const el = (tag, cls, text) => {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text != null) node.textContent = text;
+  return node;
+};
+const toBottom = () => scroller.scrollTo({ top: scroller.scrollHeight });
+const plain = (text) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const remember = (id) => { try { id ? localStorage.setItem("pk-chat", id) : localStorage.removeItem("pk-chat"); } catch {} };
+const remembered = () => { try { return localStorage.getItem("pk-chat"); } catch { return null; } };
+
+async function api(path, options) {
+  let response;
+  try { response = await fetch(path, options); }
+  catch { throw new Error("No pude conectar con el servidor local. ¿Sigue abierto python server.py?"); }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(typeof data.detail === "string" ? data.detail : "Algo falló en el servidor.");
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+const withBody = (method, body) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+// ---------- Estado general ----------
+async function loadStatus() {
+  try {
+    const status = await api("/api/status");
+    document.title = status.nombre || status.app_name;
+    $("#name").textContent = status.nombre || status.app_name;
+    $("#engine").replaceChildren(el("b", null, status.local ? "LOCAL" : "NUBE"), ` ${status.engine} · web: ${status.web || "apagada"} · fotos: ${status.vision}`);
+    $("#counts").textContent = `${status.documents} doc. · ${status.fragments} fragmentos`;
+    maxMb = status.attach_max_mb || maxMb;
+    maxFiles = status.attach_max || maxFiles;
+  } catch { /* la página funciona igual */ }
+}
+
+// ---------- Lista de chats ----------
+function renderList() {
+  const query = plain($("#find").value.trim());
+  const shown = chats.filter((chat) => plain(chat.title).includes(query));
+  list.replaceChildren();
+  if (!shown.length) list.append(el("li", "none", chats.length ? "Ningún chat coincide." : "Aún no hay chats guardados."));
+  for (const chat of shown) {
+    const item = el("li", chat.id === currentId ? "on" : "");
+    if (chat.id === editingId) {
+      const field = el("input", "rename");
+      field.value = chat.title; field.maxLength = 80; field.setAttribute("aria-label", "Nuevo nombre del chat");
+      field.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") finishRename(chat, field.value);
+        if (event.key === "Escape") { editingId = null; renderList(); }
+      });
+      field.addEventListener("blur", () => { if (editingId === chat.id) finishRename(chat, field.value); });
+      item.append(field);
+      list.append(item);
+      setTimeout(() => { field.focus(); field.select(); });
+      continue;
+    }
+    const open = el("button", "open", chat.title);
+    open.type = "button"; open.title = chat.title;
+    open.onclick = () => openChat(chat.id);
+    const edit = el("button", "icon", "✎");
+    edit.type = "button"; edit.title = "Cambiar nombre"; edit.setAttribute("aria-label", `Cambiar nombre de ${chat.title}`);
+    edit.onclick = () => { editingId = chat.id; renderList(); };
+    const remove = el("button", "icon", "×");
+    remove.type = "button"; remove.title = "Borrar chat"; remove.setAttribute("aria-label", `Borrar ${chat.title}`);
+    remove.onclick = () => removeChat(chat);
+    item.append(open, edit, remove);
+    list.append(item);
+  }
+}
+
+async function refreshList() {
+  try { chats = await api("/api/chats"); } catch { /* se queda la lista anterior */ }
+  renderList();
+}
+
+async function finishRename(chat, value) {
+  const title = value.trim();
+  editingId = null;
+  if (title && title !== chat.title) {
+    try {
+      const saved = await api(`/api/chats/${chat.id}`, withBody("PATCH", { title }));
+      chat.title = saved.title;
+      if (chat.id === currentId) $("#title").textContent = saved.title;
+    } catch (error) { alert(error.message); }
+  }
+  renderList();
+}
+
+async function removeChat(chat) {
+  if (!confirm(`¿Borrar el chat «${chat.title}» y los archivos que le adjuntaste? No se puede deshacer.`)) return;
+  try { await api(`/api/chats/${chat.id}`, { method: "DELETE" }); } catch (error) { if (error.status !== 404) return alert(error.message); }
+  if (chat.id === currentId) newChat();
+  await refreshList();
+}
+
+// ---------- Archivos adjuntos ----------
+const imageUrl = (att) => (att.kind === "imagen" && /^[0-9a-f]{32}$/.test(att.id || "")) ? `/api/attachments/${att.id}/image` : null;
+
+function chip(att, { note, error, onRemove } = {}) {
+  const box = el("span", error ? "chip error" : "chip");
+  box.title = att.name;
+  const src = att.thumb || imageUrl(att);
+  if (src) {
+    const img = el("img");
+    img.src = src; img.alt = ""; img.onerror = () => img.remove();
+    box.append(img);
+  } else {
+    box.append(el("span", "ext", (att.name.split(".").pop() || "?").slice(0, 4).toUpperCase()));
+  }
+  box.append(el("span", "nm", att.name));
+  if (note) box.append(el("span", "st", note));
+  if (onRemove) {
+    const x = el("button", "x", "×");
+    x.type = "button"; x.setAttribute("aria-label", `Quitar ${att.name}`);
+    x.onclick = onRemove;
+    box.append(x);
+  }
+  return box;
+}
+
+function noteOf(item) {
+  if (item.status === "subiendo") return item.kind === "imagen" ? "analizando la foto…" : "leyendo…";
+  if (item.status === "error") return item.message;
+  return item.truncated ? "listo (se leyó solo una parte)" : "listo";
+}
+
+function renderQueue() {
+  if (!queue.length) { $("#attached").replaceChildren(); return; }
+  const wrap = el("div", "chips");
+  queue.forEach((item) => wrap.append(chip(item, { note: noteOf(item), error: item.status === "error", onRemove: () => dropItem(item) })));
+  $("#attached").replaceChildren(wrap);
+}
+
+function updateSend() { send.disabled = busy || queue.some((item) => item.status === "subiendo"); }
+
+function dropItem(item) {
+  if (item.thumb && item.thumb.startsWith("blob:")) URL.revokeObjectURL(item.thumb);
+  queue = queue.filter((other) => other !== item);
+  renderQueue(); updateSend();
+}
+
+function clearQueue() {
+  queue.forEach((item) => { if (item.thumb && item.thumb.startsWith("blob:")) URL.revokeObjectURL(item.thumb); });
+  queue = [];
+  renderQueue(); updateSend();
+}
+
+async function uploadItem(item, file) {
+  try {
+    const response = await fetch(`/api/upload?name=${encodeURIComponent(item.name)}`, {
+      method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: file,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : "No pude analizar el archivo.");
+    if (item.thumb && item.thumb.startsWith("blob:")) URL.revokeObjectURL(item.thumb);
+    Object.assign(item, { status: "listo", id: data.id, kind: data.kind, truncated: data.truncated, thumb: null });
+  } catch (error) {
+    item.status = "error";
+    item.message = error instanceof TypeError ? "No pude conectar con el servidor local." : error.message;
+  }
+  if (queue.includes(item)) renderQueue();
+  updateSend();
+}
+
+function addFiles(files) {
+  for (const file of files) {
+    let name = file.name || "";
+    if (!name || /^image\.\w+$/i.test(name)) {  // fotos pegadas del portapapeles
+      const ext = (file.type.split("/")[1] || "png").replace("jpeg", "jpg");
+      name = `captura-${new Date().toTimeString().slice(0, 8).replaceAll(":", "")}.${ext}`;
+    }
+    const item = { name, kind: IS_IMAGE.test(name) ? "imagen" : "documento", status: "subiendo", thumb: null };
+    queue.push(item);
+    if (!FILE_OK.test(name)) {
+      Object.assign(item, { status: "error", message: "formato no compatible (PDF, DOCX, TXT, MD, CSV o foto)" });
+    } else if (file.size > maxMb * 1024 * 1024) {
+      Object.assign(item, { status: "error", message: `pesa más de ${maxMb} MB` });
+    } else if (queue.filter((other) => other.status !== "error").length > maxFiles) {
+      Object.assign(item, { status: "error", message: `máximo ${maxFiles} archivos por mensaje` });
+    } else {
+      if (item.kind === "imagen") item.thumb = URL.createObjectURL(file);
+      uploadItem(item, file);
+    }
+  }
+  renderQueue(); updateSend();
+}
+
+// ---------- Mensajes ----------
+function renderAnswer(container, text, id, sources) {
+  const cite = /\[(\d+(?:\s*[,;]\s*\d+)*)\]/g;
+  let last = 0, match;
+  while ((match = cite.exec(text))) {
+    container.append(text.slice(last, match.index));
+    for (const part of match[1].split(/\s*[,;]\s*/)) {
+      const n = Number(part);
+      if (!sources.some((s) => s.n === n)) { container.append(`[${part}]`); continue; }
+      const button = el("button", "cite", String(n));
+      button.type = "button";
+      button.setAttribute("aria-label", `Ver fuente ${n}`);
+      button.onclick = () => {
+        const box = document.getElementById(`s-${id}-${n}`);
+        if (box) { box.open = true; box.classList.add("flash"); box.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+      };
+      container.append(button);
+    }
+    last = match.index + match[0].length;
+  }
+  container.append(text.slice(last));
+}
+
+function sourceCard(source, id) {
+  const box = el("details");
+  box.id = `s-${id}-${source.n}`;
+  const origin = source.origin === "adjunto" ? (source.kind === "imagen" ? "foto adjunta (análisis automático) · " : "archivo adjunto · ") : "";
+  const where = origin + source.source + (source.page ? ` · ${source.page}` : "");
+  box.append(el("summary", null, `[${source.n}] ${where} · similitud ${source.score.toFixed(2)}`), el("pre", null, source.text));
+  return box;
+}
+
+function showEmpty() {
+  const note = el("p", "empty");
+  EMPTY.split("\n").forEach((line, i) => { if (i) note.append(el("br")); note.append(line); });
+  log.replaceChildren(note);
+}
+
+function addUser(text, atts = []) {
+  log.querySelector(".empty")?.remove();
+  const row = el("div", "msg me");
+  const box = el("div", "mebox");
+  if (atts.length) {
+    const chips = el("div", "chips");
+    atts.forEach((att) => chips.append(chip(att)));
+    box.append(chips);
+  }
+  box.append(el("p", null, text));
+  row.append(box);
+  log.append(row);
+  toBottom();
+}
+
+function addPending(withFiles) {
+  const row = el("div", "msg");
+  const body = el("div", "body warn", withFiles ? "Leyendo tu archivo y buscando" : "Buscando en tus documentos");
+  body.append(el("span", "dots"));
+  row.append(body);
+  log.append(row);
+  toBottom();
+  return row;
+}
+
+const LABELS = { charla: "Conversación", archivo: "Tu archivo", documentos: "Tus documentos", web: "Web",
+                 web_pendiente: "Falta tu permiso", sin_respaldo: "Sin respaldo", ajuste: "Ajuste guardado", espacio: "Archivo",
+                 memoria: "Memoria", herramienta: "Cálculo / hora" };
+const UNCONFIRMED = "Búsqueda web sin confirmar: no salió nada de tu computador.";
+
+// La consulta lleva palabras sacadas de tu archivo: se te muestra (editable) y NO sale nada hasta que confirmes.
+function confirmBox(row, pending, opts = {}) {
+  const box = el("div", "confirm");
+  const field = el("input");
+  field.type = "text"; field.maxLength = 100; field.value = pending.query;
+  field.setAttribute("aria-label", "Consulta de búsqueda web");
+  const go = el("button", "btn small", "Buscar en la web");
+  const no = el("button", "btn small ghost", "No buscar");
+  go.type = "button"; no.type = "button";
+  const actions = el("div", "actions");
+  actions.append(go, no);
+  const state = el("div", "tag");
+  const controls = [field, go, no];
+
+  async function decide(cancel) {
+    const chatId = opts.chatId || currentId;
+    if (!chatId) return;
+    controls.forEach((node) => { node.disabled = true; });
+    state.textContent = cancel ? "" : "Buscando en la web…";
+    try {
+      const result = await api("/api/web", withBody("POST", { chat_id: chatId, query: field.value, cancel, voice: Boolean(opts.onAnswer) }));
+      showAnswer(row, result);
+      refreshList();
+      if (opts.onAnswer) opts.onAnswer(result);
+    } catch (error) {
+      if (error.status === 409) return box.replaceWith(el("div", "notice", UNCONFIRMED));
+      controls.forEach((node) => { node.disabled = false; });
+      state.textContent = error.message;
+    }
+  }
+  go.onclick = () => decide(false);
+  no.onclick = () => decide(true);
+  field.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); decide(false); } });
+
+  box.append(el("div", "tag", "Consulta que saldría de tu computador (puedes editarla):"), field, actions,
+             el("div", "tag", `Palabras tomadas de tu archivo: ${pending.terms.join(", ")}`), state);
+  return box;
+}
+
+// Solo enlaces http(s): un extracto web nunca puede ejecutar código desde un enlace.
+function webLink(result, id) {
+  const link = el("a", "link", result.title);
+  link.id = `s-${id}-${result.n}`;
+  link.href = /^https?:\/\//i.test(result.url) ? result.url : "#";
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.append(el("small", null, `[${result.n}] ${result.url}`));
+  if (result.snippet) link.append(el("small", null, result.snippet));
+  return link;
+}
+
+function showAnswer(row, data, canConfirm = true, opts = {}) {
+  const id = ++counter;
+  const mode = data.mode || (data.grounded ? "documentos" : "sin_respaldo");
+  const web = data.web || [];
+  const hot = mode === "web" || mode === "archivo" || mode === "web_pendiente";
+  const badge = el("span", hot ? "badge hot" : "badge", LABELS[mode] || mode);
+  const body = el("div", mode === "sin_respaldo" ? "body warn" : "body");
+  body.dataset.mode = mode;
+  renderAnswer(body, data.answer, id, [...data.sources, ...web]);
+  row.replaceChildren(badge);
+  if (data.web_query && mode !== "web_pendiente") {
+    const used = data.file_context ? " · usando el tema de tu archivo" : "";
+    row.append(el("div", "notice", `${mode === "web" ? "Se buscó en la web" : "Consulta que se intentó"}: «${data.web_query}»${used}`));
+  }
+  row.append(body);
+  if (data.pending_web) row.append(canConfirm ? confirmBox(row, data.pending_web, opts) : el("div", "notice", UNCONFIRMED));
+  if (data.sources.length) {
+    const box = el("div", "sources");
+    box.append(el("div", "tag", "Fuentes consultadas"));
+    data.sources.forEach((source) => box.append(sourceCard(source, id)));
+    row.append(box);
+  }
+  if (web.length) {
+    const box = el("div", "sources");
+    box.append(el("div", "tag", "Enlaces de la web (se abren en otra pestaña)"));
+    web.forEach((result) => box.append(webLink(result, id)));
+    row.append(box);
+  }
+  toBottom();
+}
+
+function showError(row, message) {
+  row.replaceChildren(el("div", "body err", message));
+  toBottom();
+}
+
+// ---------- Abrir / crear chats ----------
+function closeMenu() { document.body.classList.remove("menu-open"); }
+
+function newChat() {
+  currentId = null;
+  remember(null);
+  clearQueue();
+  $("#title").textContent = "Chat nuevo";
+  showEmpty();
+  renderList();
+  closeMenu();
+  input.focus();
+}
+
+async function openChat(id) {
+  try {
+    const chat = await api(`/api/chats/${id}`);
+    currentId = chat.id;
+    remember(chat.id);
+    clearQueue();
+    $("#title").textContent = chat.title;
+    log.replaceChildren();
+    chat.messages.forEach((message, index) => {
+      if (message.role === "user") addUser(message.text, message.attachments || []);
+      else { const row = el("div", "msg"); log.append(row); showAnswer(row, message, index === chat.messages.length - 1); }
+    });
+    if (!chat.messages.length) showEmpty();
+    toBottom();
+  } catch (error) {
+    if (error.status === 404) { await refreshList(); return newChat(); }
+    alert(error.message);
+  }
+  renderList();
+  closeMenu();
+}
+
+// ---------- Preguntar ----------
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (busy || queue.some((item) => item.status === "subiendo")) return;
+  const ready = queue.filter((item) => item.status === "listo");
+  const typed = input.value.trim();
+  if (!typed && !ready.length) return;
+  const question = typed || DEFAULT_Q;  // solo un archivo: el servidor pregunta «¿de qué trata?» por ti
+  const shown = ready.map(({ id, name, kind }) => ({ id, name, kind }));
+  input.value = "";
+  autosize();
+  clearQueue();  // los que fallaron no se envían: se descartan
+  // Una búsqueda web que esperaba tu permiso queda sin confirmar al hacer otra pregunta
+  log.querySelectorAll(".confirm").forEach((box) => box.replaceWith(el("div", "notice", UNCONFIRMED)));
+  addUser(question, shown);
+  const pending = addPending(shown.length > 0);
+  busy = true; updateSend();
+  try {
+    const data = await api("/api/ask", withBody("POST", { question: typed, chat_id: currentId, attachments: shown.map((att) => att.id) }));
+    currentId = data.chat_id;
+    remember(currentId);
+    $("#title").textContent = data.title;
+    showAnswer(pending, data);
+    await refreshList();
+  } catch (error) {
+    showError(pending, error.message);
+    if (error.status === 404) { currentId = null; remember(null); refreshList(); }
+    else if (ready.length) { queue = ready; renderQueue(); }  // los archivos siguen subidos: se pueden reenviar
+  } finally {
+    busy = false; updateSend();
+    input.focus();
+  }
+});
+
+function autosize() {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 160) + "px";
+}
+input.addEventListener("input", autosize);
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+input.addEventListener("paste", (event) => {  // Ctrl+V con una captura o foto copiada
+  const files = [...(event.clipboardData?.files || [])];
+  if (files.length) { event.preventDefault(); addFiles(files); }
+});
+$("#clip").onclick = () => $("#file").click();
+$("#file").addEventListener("change", (event) => { addFiles([...event.target.files]); event.target.value = ""; });
+
+// Arrastrar archivos a cualquier parte de la página
+let dragDepth = 0;
+const hasFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+window.addEventListener("dragenter", (event) => { if (hasFiles(event)) { event.preventDefault(); dragDepth++; document.body.classList.add("drag"); } });
+window.addEventListener("dragover", (event) => { if (hasFiles(event)) event.preventDefault(); });
+window.addEventListener("dragleave", (event) => {
+  if (!hasFiles(event)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) document.body.classList.remove("drag");
+});
+window.addEventListener("drop", (event) => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove("drag");
+  addFiles([...event.dataTransfer.files]);
+});
+
+$("#new").onclick = newChat;
+$("#find").addEventListener("input", renderList);
+$("#menu").onclick = () => document.body.classList.toggle("menu-open");
+
+// ---------- Inicio: recuperar el último chat abierto ----------
+(async () => {
+  showEmpty();
+  loadStatus();
+  await refreshList();
+  const last = remembered();
+  if (last && chats.some((chat) => chat.id === last)) openChat(last);
+})();
+</script>
+<script src="/asistente.js"></script>
+<script src="/memoria.js"></script>
+</body>
+</html>
